@@ -4,14 +4,43 @@ from app.models.ml_models import ml_models
 from app.models.schemas import ReceiptResponse
 from app.utils.categories import get_store_category
 import re
+import logging
+
+logger = logging.getLogger(__name__)
 
 class ReceiptProcessor:
     def __init__(self):
-        self.processor = ml_models.processor
-        self.model = ml_models.model
-        self.device = ml_models.device
+        self._processor = None
+        self._model = None
+        self._device = None
+
+    @property
+    def processor(self):
+        if self._processor is None:
+            self._processor = ml_models.processor
+            if self._processor is None:
+                raise RuntimeError("ML models not initialized. Please ensure models are loaded first.")
+        return self._processor
+
+    @property
+    def model(self):
+        if self._model is None:
+            self._model = ml_models.model
+            if self._model is None:
+                raise RuntimeError("ML models not initialized. Please ensure models are loaded first.")
+        return self._model
+
+    @property
+    def device(self):
+        if self._device is None:
+            self._device = ml_models.device
+        return self._device
 
     def process_receipt(self, image: Image.Image) -> ReceiptResponse:
+        # Check if models are initialized
+        if not all([self.processor, self.model, self.device]):
+            raise RuntimeError("ML models not properly initialized")
+            
         xml_output = self._generate_xml(image)
         receipt_data = self._extract_receipt_data(xml_output)
         
@@ -57,3 +86,6 @@ class ReceiptProcessor:
         value = re.sub(r'[A-Za-z$£€¥RM\s,]', '', value)
         matches = re.findall(r'\d+\.?\d*', value)
         return round(float(matches[0]), 2) if matches else 0.00
+
+# Create a singleton instance  
+receipt_processor = ReceiptProcessor()
