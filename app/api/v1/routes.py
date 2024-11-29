@@ -30,6 +30,9 @@ async def process_receipt(
     content_type: str = Form(default=None),
     filename: str = Form(default=None)
 ):
+    content_type = content_type or file.content_type
+    filename = filename or file.filename
+    
     if not file:
         logger.error("File not provided in the request")
         raise HTTPException(status_code=400, detail="No file provided")
